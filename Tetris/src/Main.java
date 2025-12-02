@@ -2,49 +2,49 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-    static int col = 25;
-    static int row = 10;
-    private static int[][] Tetris = new int[col][row];
+    static int col = 25; //테트리스 게임 높이 기본 20 + 블록 생성 공간 4 + 맨 아래 바닥 1
+    static int row = 10; //테트리스 게임 폭 벽 없이 그냥 10
+    private static int[][] Tetris = new int[col][row]; //테트리스 게임 공간 2차원 배열
 
-    static void init() {
+    static void init() { //초기 게임 설정하는 함수
         for (int i = 0; i < col; i++) {
             for (int j = 0; j < row; j++) {
-                Tetris[i][j] = 0;
+                Tetris[i][j] = 0; //모든 공간을 0으로 채움, 0은 게임 시스템 상 비어있는 공간
             }
         }
     }
 
-    static void print_tetris() {
+    static void print_tetris() { //화면을 출력하는 함수
 
         for (int i = 0; i < col; i++) {
-            for (int j = 0; j < row; j++) {
+            for (int j = 0; j < row; j++) { //배열에서 값을 받아서 해당하는 것을 출력하는 함수, 0은 공백이고 "□"으로 표현, 2는 현재 조작중인 블록 "●"으로 표현
                 if (Tetris[i][j] == 0)
                     System.out.print(" □ ");
                 else if(Tetris[i][j] == 2)
-                    System.out.print(" ■ ");
+                    System.out.print(" ● ");
             }
             System.out.println();
         }
     }
 
-    static void make_blocks() {
+    static void make_blocks() { //맨 위에 블록을 생성하는 함수
 
-            for (int j = 0; j < 10; j++) {
+            for (int j = 0; j < 10; j++) { //우선 게임상 맨위의 공간에 굳은 블록(시스템 상 1, "■"로 표현)이 있는지 테스트
                 if(Tetris[4][j] == 1){
-                    game_over();
+                    game_over(); //만약 맨위 공간에 굳은 블록이 있으면 게임 오버함수 호출 후 브레이크
                     break;
                 }
             }
 
 
-        int r = (int)(Math.random() * 7) + 1;
+        int r = (int)(Math.random() * 7) + 1; //난수로 1부터 7까지 값 랜덤 생성후 random_blocks함수에 인자로 전달
         random_blocks(r);
     }
 
-    static void random_blocks(int r) {
+    static void random_blocks(int r) { //랜덤한 블록을 생성하는 함수
         switch (r) {
             case 1:
-                for (int i = 2; i < 6; i++) {
+                for (int i = 2; i < 6; i++) {// 1부터 7까지의 각각의 형태의 블록을 생성
                     Tetris[4][i] = 2;
                 }
                 break;
@@ -93,15 +93,15 @@ public class Main {
         }
     }
 
-    static void clear_screen() {
-        System.out.println("\n".repeat(40));
+    static void clear_screen() { //화면을 지우는 함수
+        System.out.println("\n".repeat(40)); //하지만 인텔리제이로 실행하면 터미널이 아니기 때문에 간단하게 println을 여러번 호출해서 화면 줄 바꿈으로 구현
     }
 
-    static void fall(){
+    static void fall(){ //현재 조작중인 블록을 한 칸씩 아래로 보내는 함수
 
     }
 
-    static boolean game_over() {
+    static boolean game_over() { //게임 오버를 판별하고 게임 오버시 게임을 종료시키는 함수 (아직 미구현이라 일단은 false로 해놓음)
         return false;
     }
 
