@@ -98,7 +98,38 @@ public class Main {
     }
 
     static void fall(){ //현재 조작중인 블록을 한 칸씩 아래로 보내는 함수
+        int c = col-1;
+        int r = row-1;
 
+        for(int i = c; i>0;i--){
+            for(int j = r; j>0;j--){
+                if(is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
+                    Tetris[i][j] = 1;
+                }
+
+                else if(!is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
+                    Tetris[i][j] = 0;
+                    Tetris[i+1][j] = 2;
+                }
+            }
+        }
+    }
+
+    static boolean is_down(int i, int j){
+        if(i>=col-2)
+            return true;
+
+        if(Tetris[i+1][j] == 1){
+            return true;
+        }
+        return false;
+    }
+
+    static boolean is_in(int i, int j){
+        if(i <0 || i >col-1 || j < 0 || j >row-1){
+            return false;
+        }
+        return true;
     }
 
     static boolean game_over() { //게임 오버를 판별하고 게임 오버시 게임을 종료시키는 함수 (아직 미구현이라 일단은 false로 해놓음)
@@ -112,6 +143,7 @@ public class Main {
 
         while(true) {
             print_tetris();
+            fall();
             TimeUnit.SECONDS.sleep(1);
             clear_screen();
         }
