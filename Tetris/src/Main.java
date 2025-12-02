@@ -22,6 +22,8 @@ public class Main {
                     System.out.print(" □ ");
                 else if(Tetris[i][j] == 2)
                     System.out.print(" ● ");
+                else
+                    System.out.print(" ■ ");
             }
             System.out.println();
         }
@@ -88,13 +90,23 @@ public class Main {
                 Tetris[4][4] = 2;
                 Tetris[4][5] = 2;
                 Tetris[5][4] = 2;
-                Tetris[5][5] = 2;
+                Tetris[5][3] = 2;
                 break;
         }
     }
 
     static void clear_screen() { //화면을 지우는 함수
         System.out.println("\n".repeat(40)); //하지만 인텔리제이로 실행하면 터미널이 아니기 때문에 간단하게 println을 여러번 호출해서 화면 줄 바꿈으로 구현
+    }
+
+    static void freeze_blocks(){//현재 조작중인 블록을 고정된 블록 (1, "■")로 만드는 함수
+        for(int l = 0;l<col;l++){
+            for(int k = 0;k<row;k++){
+                if(Tetris[l][k] == 2){
+                    Tetris[l][k] = 1;
+                }
+            }
+        }
     }
 
     static void fall(){ //현재 조작중인 블록을 한 칸씩 아래로 보내는 함수
@@ -104,7 +116,9 @@ public class Main {
         for(int i = c; i>0;i--){
             for(int j = r; j>0;j--){
                 if(is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
-                    Tetris[i][j] = 1;
+                    freeze_blocks();
+                    make_blocks();
+                    return;
                 }
 
                 else if(!is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
@@ -115,8 +129,8 @@ public class Main {
         }
     }
 
-    static boolean is_down(int i, int j){
-        if(i>=col-2)
+    static boolean is_down(int i, int j){//밑에 뭐가 있는지 확인하는 함수
+        if(i>=col-1)
             return true;
 
         if(Tetris[i+1][j] == 1){
@@ -125,7 +139,7 @@ public class Main {
         return false;
     }
 
-    static boolean is_in(int i, int j){
+    static boolean is_in(int i, int j){//게임 범위 내에 있는지 확인하는 함수
         if(i <0 || i >col-1 || j < 0 || j >row-1){
             return false;
         }
