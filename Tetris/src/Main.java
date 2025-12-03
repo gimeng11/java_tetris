@@ -1,3 +1,7 @@
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -19,11 +23,11 @@ public class Main {
         for (int i = 0; i < col; i++) {
             for (int j = 0; j < row; j++) { //배열에서 값을 받아서 해당하는 것을 출력하는 함수, 0은 공백이고 "□"으로 표현, 2는 현재 조작중인 블록 "●"으로 표현
                 if (Tetris[i][j] == 0)
-                    System.out.print(" □ ");
+                    System.out.print(" . ");
                 else if(Tetris[i][j] == 2)
-                    System.out.print(" ● ");
+                    System.out.print(" + ");
                 else
-                    System.out.print(" ■ ");
+                    System.out.print(" = ");
             }
             System.out.println();
         }
@@ -146,11 +150,74 @@ public class Main {
         return true;
     }
 
+    static void order() throws IOException {
+
+        Terminal terminal = TerminalBuilder.builder()
+                .system(false)                 // ★ 시스템 터미널 쓰려고 시도 안 함
+                .dumb(true)                    // ★ 처음부터 DumbTerminal 쓰겠다고 명시
+                .streams(System.in, System.out) // ★ 표준 입출력 사용
+                .build();
+
+        terminal.enterRawMode(); // dumb이어도 호출은 가능 (실제 raw는 안 될 수 있음)
+
+        int ch = terminal.reader().read();  // 엔터 없이 바로 읽힘
+        char c = Character.toLowerCase((char) ch);
+        int value = switch (c) {
+            case 'a' -> 1;
+            case 'd' -> 2;
+            case 's' -> 3;
+            case 'r' -> 4;
+            default -> 5;
+        };
+
+        move(value);
+
+    }
+
+    static void move(int value){
+        switch (value){
+            case 1:
+                left();
+                break;
+
+            case 2:
+                right();
+                break;
+
+            case 3:
+                down();
+                break;
+
+            case 4:
+                rotate();
+                break;
+
+            case 5:
+                break;
+        }
+    }
+
+    static void left(){
+        System.out.print("left 테스트");
+    }
+
+    static void right(){
+        System.out.print("right 테스트");
+    }
+
+    static void down(){
+        System.out.print("down 테스트");
+    }
+
+    static void rotate(){
+        System.out.print("rotate 테스트");
+    }
+
     static boolean game_over() { //게임 오버를 판별하고 게임 오버시 게임을 종료시키는 함수 (아직 미구현이라 일단은 false로 해놓음)
         return false;
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
 
         init();
         make_blocks();
@@ -159,7 +226,12 @@ public class Main {
             print_tetris();
             fall();
             TimeUnit.SECONDS.sleep(1);
-            clear_screen();
+            //clear_screen();
+            try {
+                order();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
