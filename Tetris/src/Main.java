@@ -1,237 +1,285 @@
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-    static int col = 25; //테트리스 게임 높이 기본 20 + 블록 생성 공간 4 + 맨 아래 바닥 1
-    static int row = 10; //테트리스 게임 폭 벽 없이 그냥 10
-    private static int[][] Tetris = new int[col][row]; //테트리스 게임 공간 2차원 배열
+    static int col = 25;                  // 세로(높이)
+    static int row = 10;                  // 가로(폭)
+    private static int[][] Tetris = new int[col][row];  // Tetris[y][x]
 
-    static void init() { //초기 게임 설정하는 함수
-        for (int i = 0; i < col; i++) {
-            for (int j = 0; j < row; j++) {
-                Tetris[i][j] = 0; //모든 공간을 0으로 채움, 0은 게임 시스템 상 비어있는 공간
+    // 마지막 키 입력 저장용 (입력 스레드가 채우고, 메인 루프가 소비)
+    static volatile int lastKey = -1;
+
+    // ================== 기본 초기화 ==================
+    static void init() {
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                Tetris[y][x] = 0;
             }
         }
     }
 
-    static void print_tetris() { //화면을 출력하는 함수
-
-        for (int i = 0; i < col; i++) {
-            for (int j = 0; j < row; j++) { //배열에서 값을 받아서 해당하는 것을 출력하는 함수, 0은 공백이고 "□"으로 표현, 2는 현재 조작중인 블록 "●"으로 표현
-                if (Tetris[i][j] == 0)
-                    System.out.print(" . ");
-                else if(Tetris[i][j] == 2)
-                    System.out.print(" + ");
-                else
-                    System.out.print(" = ");
+    // ================== 화면 출력 ==================
+    static void print_tetris() {
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                if (Tetris[y][x] == 0)      System.out.print(" □ ");
+                else if (Tetris[y][x] == 2) System.out.print(" ● ");
+                else                        System.out.print(" ■ ");
             }
             System.out.println();
         }
     }
 
-    static void make_blocks() { //맨 위에 블록을 생성하는 함수
-
-            for (int j = 0; j < 10; j++) { //우선 게임상 맨위의 공간에 굳은 블록(시스템 상 1, "■"로 표현)이 있는지 테스트
-                if(Tetris[4][j] == 1){
-                    game_over(); //만약 맨위 공간에 굳은 블록이 있으면 게임 오버함수 호출 후 브레이크
-                    break;
-                }
-            }
-
-
-        int r = (int)(Math.random() * 7) + 1; //난수로 1부터 7까지 값 랜덤 생성후 random_blocks함수에 인자로 전달
-        random_blocks(r);
+    // ================== 화면 지우기 ==================
+    static void clear_screen() {
+        // ANSI 시도 후, 안 먹으면 그냥 줄바꿈으로 밀기
+        System.out.print("\u001b[H\u001b[2J");
+        System.out.flush();
+        System.out.println("\n".repeat(3));
     }
 
-    static void random_blocks(int r) { //랜덤한 블록을 생성하는 함수
+    // ================== 블록 생성 ==================
+    static void make_blocks() {
+        int r = (int)(Math.random() * 7) + 1; // 1~7 랜덤
+        if (!random_blocks(r)) {
+            game_over();
+        }
+    }
+
+    static boolean random_blocks(int r) {
+        // 생성 위치는 맨 위쪽 몇 줄 사용 (y=0~3)
+        // 생성 전에 충돌 확인
         switch (r) {
-            case 1:
-                for (int i = 2; i < 6; i++) {// 1부터 7까지의 각각의 형태의 블록을 생성
-                    Tetris[4][i] = 2;
+            case 1 -> { // I 모양 ----
+                for (int x = 3; x < 7; x++) {
+                    if (Tetris[0][x] != 0) return false;
                 }
-                break;
-
-            case 2:
-                Tetris[4][5] = 2;
-                for (int i = 3; i < 6; i++) {
-                    Tetris[5][i] = 2;
-                }
-                break;
-
-            case 3:
-                Tetris[4][3] = 2;
-                for (int i = 3; i < 6; i++) {
-                    Tetris[5][i] = 2;
-                }
-                break;
-
-            case 4:
-                Tetris[4][4] = 2;
-                for (int i = 3; i < 6; i++) {
-                    Tetris[4][i] = 2;
-                }
-                break;
-
-            case 5:
-                Tetris[4][4] = 2;
-                Tetris[4][5] = 2;
-                Tetris[5][4] = 2;
-                Tetris[5][5] = 2;
-                break;
-
-            case 6:
-                Tetris[4][4] = 2;
-                Tetris[4][5] = 2;
-                Tetris[5][6] = 2;
-                Tetris[5][5] = 2;
-                break;
-
-            case 7:
-                Tetris[4][4] = 2;
-                Tetris[4][5] = 2;
-                Tetris[5][4] = 2;
-                Tetris[5][3] = 2;
-                break;
-        }
-    }
-
-    static void clear_screen() { //화면을 지우는 함수
-        System.out.println("\n".repeat(40)); //하지만 인텔리제이로 실행하면 터미널이 아니기 때문에 간단하게 println을 여러번 호출해서 화면 줄 바꿈으로 구현
-    }
-
-    static void freeze_blocks(){//현재 조작중인 블록을 고정된 블록 (1, "■")로 만드는 함수
-        for(int l = 0;l<col;l++){
-            for(int k = 0;k<row;k++){
-                if(Tetris[l][k] == 2){
-                    Tetris[l][k] = 1;
+                for (int x = 3; x < 7; x++) {
+                    Tetris[0][x] = 2;
                 }
             }
-        }
-    }
+            case 2 -> { // └─ 모양
+                if (Tetris[0][5] != 0 ||
+                        Tetris[1][3] != 0 || Tetris[1][4] != 0 || Tetris[1][5] != 0) return false;
 
-    static void fall(){ //현재 조작중인 블록을 한 칸씩 아래로 보내는 함수
-        int c = col-1;
-        int r = row-1;
-
-        for(int i = c; i>0;i--){
-            for(int j = r; j>0;j--){
-                if(is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
-                    freeze_blocks();
-                    make_blocks();
-                    return;
-                }
-
-                else if(!is_down(i,j) && is_in(i,j) && Tetris[i][j] == 2){
-                    Tetris[i][j] = 0;
-                    Tetris[i+1][j] = 2;
-                }
+                Tetris[0][5] = 2;
+                Tetris[1][3] = 2;
+                Tetris[1][4] = 2;
+                Tetris[1][5] = 2;
             }
-        }
-    }
+            case 3 -> { // ─┘ 모양
+                if (Tetris[0][3] != 0 ||
+                        Tetris[1][3] != 0 || Tetris[1][4] != 0 || Tetris[1][5] != 0) return false;
 
-    static boolean is_down(int i, int j){//밑에 뭐가 있는지 확인하는 함수
-        if(i>=col-1)
-            return true;
+                Tetris[0][3] = 2;
+                Tetris[1][3] = 2;
+                Tetris[1][4] = 2;
+                Tetris[1][5] = 2;
+            }
+            case 4 -> { // T 모양
+                if (Tetris[0][4] != 0 ||
+                        Tetris[1][3] != 0 || Tetris[1][4] != 0 || Tetris[1][5] != 0) return false;
 
-        if(Tetris[i+1][j] == 1){
-            return true;
-        }
-        return false;
-    }
+                Tetris[0][4] = 2;
+                Tetris[1][3] = 2;
+                Tetris[1][4] = 2;
+                Tetris[1][5] = 2;
+            }
+            case 5 -> { // ㅁ 모양
+                if (Tetris[0][4] != 0 || Tetris[0][5] != 0 ||
+                        Tetris[1][4] != 0 || Tetris[1][5] != 0) return false;
 
-    static boolean is_in(int i, int j){//게임 범위 내에 있는지 확인하는 함수
-        if(i <0 || i >col-1 || j < 0 || j >row-1){
-            return false;
+                Tetris[0][4] = 2;
+                Tetris[0][5] = 2;
+                Tetris[1][4] = 2;
+                Tetris[1][5] = 2;
+            }
+            case 6 -> { // S 모양
+                if (Tetris[0][4] != 0 || Tetris[0][5] != 0 ||
+                        Tetris[1][5] != 0 || Tetris[1][6] != 0) return false;
+
+                Tetris[0][4] = 2;
+                Tetris[0][5] = 2;
+                Tetris[1][5] = 2;
+                Tetris[1][6] = 2;
+            }
+            case 7 -> { // Z 모양
+                if (Tetris[0][4] != 0 || Tetris[0][5] != 0 ||
+                        Tetris[1][3] != 0 || Tetris[1][4] != 0) return false;
+
+                Tetris[0][4] = 2;
+                Tetris[0][5] = 2;
+                Tetris[1][3] = 2;
+                Tetris[1][4] = 2;
+            }
         }
         return true;
     }
 
-    static void order() throws IOException {
-
-        Terminal terminal = TerminalBuilder.builder()
-                .system(false)                 // ★ 시스템 터미널 쓰려고 시도 안 함
-                .dumb(true)                    // ★ 처음부터 DumbTerminal 쓰겠다고 명시
-                .streams(System.in, System.out) // ★ 표준 입출력 사용
-                .build();
-
-        terminal.enterRawMode(); // dumb이어도 호출은 가능 (실제 raw는 안 될 수 있음)
-
-        int ch = terminal.reader().read();  // 엔터 없이 바로 읽힘
-        char c = Character.toLowerCase((char) ch);
-        int value = switch (c) {
-            case 'a' -> 1;
-            case 'd' -> 2;
-            case 's' -> 3;
-            case 'r' -> 4;
-            default -> 5;
-        };
-
-        move(value);
-
-    }
-
-    static void move(int value){
-        switch (value){
-            case 1:
-                left();
-                break;
-
-            case 2:
-                right();
-                break;
-
-            case 3:
-                down();
-                break;
-
-            case 4:
-                rotate();
-                break;
-
-            case 5:
-                break;
+    // ================== 현재 조작 블록 -> 굳히기 ==================
+    static void freeze_blocks() {
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                if (Tetris[y][x] == 2) {
+                    Tetris[y][x] = 1;
+                }
+            }
         }
     }
 
-    static void left(){
-        System.out.print("left 테스트");
+    // ================== 아래로 한 칸 자동 낙하 ==================
+    static boolean can_fall() {
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                if (Tetris[y][x] == 2) {
+                    // 맨 아래면 더 못 감
+                    if (y == col - 1) return false;
+                    // 아래가 굳은 블록이면 못 감
+                    if (Tetris[y + 1][x] == 1) return false;
+                }
+            }
+        }
+        return true;
     }
 
-    static void right(){
-        System.out.print("right 테스트");
+    static void fall_step() {
+        if (can_fall()) {
+            // 아래로 한 칸 이동 (아래에서 위로 스캔)
+            for (int y = col - 2; y >= 0; y--) {
+                for (int x = 0; x < row; x++) {
+                    if (Tetris[y][x] == 2) {
+                        Tetris[y][x] = 0;
+                        Tetris[y + 1][x] = 2;
+                    }
+                }
+            }
+        } else {
+            // 더 못 떨어지면 굳히고 새 블록 생성
+            freeze_blocks();
+            make_blocks();
+        }
     }
 
-    static void down(){
-        System.out.print("down 테스트");
+    // ================== 좌/우/수동 아래 이동 ==================
+    static void left() {
+        // 이동 가능 여부 검사
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                if (Tetris[y][x] == 2) {
+                    if (x == 0) return;              // 왼쪽 벽
+                    if (Tetris[y][x - 1] == 1) return; // 왼쪽에 굳은 블록
+                }
+            }
+        }
+        // 실제 이동
+        for (int y = 0; y < col; y++) {
+            for (int x = 1; x < row; x++) {
+                if (Tetris[y][x] == 2) {
+                    Tetris[y][x] = 0;
+                    Tetris[y][x - 1] = 2;
+                }
+            }
+        }
     }
 
-    static void rotate(){
-        System.out.print("rotate 테스트");
+    static void right() {
+        // 이동 가능 여부 검사
+        for (int y = 0; y < col; y++) {
+            for (int x = 0; x < row; x++) {
+                if (Tetris[y][x] == 2) {
+                    if (x == row - 1) return;           // 오른쪽 벽
+                    if (Tetris[y][x + 1] == 1) return;  // 오른쪽에 굳은 블록
+                }
+            }
+        }
+        // 실제 이동 (오른쪽은 역순 스캔)
+        for (int y = 0; y < col; y++) {
+            for (int x = row - 2; x >= 0; x--) {
+                if (Tetris[y][x] == 2) {
+                    Tetris[y][x] = 0;
+                    Tetris[y][x + 1] = 2;
+                }
+            }
+        }
     }
 
-    static boolean game_over() { //게임 오버를 판별하고 게임 오버시 게임을 종료시키는 함수 (아직 미구현이라 일단은 false로 해놓음)
-        return false;
+    static void down() {
+        // 수동으로 한 칸 아래 (S키 같은 느낌)
+        if (can_fall()) {
+            for (int y = col - 2; y >= 0; y--) {
+                for (int x = 0; x < row; x++) {
+                    if (Tetris[y][x] == 2) {
+                        Tetris[y][x] = 0;
+                        Tetris[y + 1][x] = 2;
+                    }
+                }
+            }
+        } else {
+            freeze_blocks();
+            make_blocks();
+        }
     }
 
-    public static void main(String[] args) throws InterruptedException, IOException {
+    static void rotate() {
+        // 회전은 나중에… (지금은 일단 패스)
+    }
+
+    // ================== 게임 오버 ==================
+    static void game_over() {
+        clear_screen();
+        System.out.println("GAME OVER");
+        System.exit(0);
+    }
+
+    // ================== 입력 처리 ==================
+    static void startInputThread() {
+        new Thread(() -> {
+            try {
+                while (true) {
+                    int ch = System.in.read();
+                    if (ch == -1) break;
+                    if (ch == '\r' || ch == '\n') continue;  // 엔터는 무시
+                    lastKey = ch;
+                }
+            } catch (IOException e) {
+                // 그냥 무시
+            }
+        }).start();
+    }
+
+    static void handleInput() {
+        int ch = lastKey;
+        if (ch == -1) return;     // 새 입력 없음
+        lastKey = -1;             // 한 번 소비하고 초기화
+
+        char c = Character.toLowerCase((char) ch);
+        switch (c) {
+            case 'a' -> left();
+            case 'd' -> right();
+            case 's' -> down();
+            case 'r' -> rotate();
+        }
+    }
+
+    // ================== 메인 루프 ==================
+    public static void main(String[] args) throws Exception {
 
         init();
         make_blocks();
+        startInputThread();
 
-        while(true) {
+        while (true) {
+            clear_screen();
             print_tetris();
-            fall();
-            TimeUnit.SECONDS.sleep(1);
-            //clear_screen();
-            try {
-                order();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+
+            // 입력 한 번 처리
+            handleInput();
+
+            // 자동으로 한 칸 떨어뜨리기
+            fall_step();
+
+            // 속도 조절
+            Thread.sleep(700);
         }
     }
 }
